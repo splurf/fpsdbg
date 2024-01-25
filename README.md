@@ -14,18 +14,11 @@ This repo will serve as a portfolio for my progression towards learning OpenGL. 
 + libglew-dev (v2.2.0-*)
 
 ## Build
-Clone the project then go into the project directory.
-```
-git clone https://github.com/splurf/fpsdbg
-cd fpsdbg
-```
-Then run `make` or `make release` to build the project.
 ```
 make release
 ```
 
 ## Usage
-As of right now, there are no additional flags.
 ```
 ./target/release/fpsdbg
 ```

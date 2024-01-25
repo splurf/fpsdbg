@@ -10,11 +10,11 @@ Renders a rotating cube, using OpenGL (GLSL 4.6).
 This repo will serve as a portfolio for my progression towards learning OpenGL. As of right now, it simply renders a rotating cube. Hopefully, when I have more time, I'll implement more features. The goal of this is to further my understanding of OpenGL and graphics rendering in general.
 
 ## Dependencies
-+ libglfw3 (v3.3.6*)
-+ libglew-dev (v2.2.0*)
++ libglfw3 (v3.3.6-*)
++ libglew-dev (v2.2.0-*)
 
 ## Build
-Clone the project then advance to the project directory.
+Clone the project then go into the project directory.
 ```
 git clone https://github.com/splurf/fpsdbg
 cd fpsdbg
@@ -27,5 +27,5 @@ make release
 ## Usage
 As of right now, there are no additional flags.
 ```
-./bin/fpsdbg
+./target/release/fpsdbg
 ```

@@ -1,16 +1,8 @@
 #include "fpsdbg.h"
-#include <stdbool.h>
-#include <time.h>
 
-const camera cam = {
-    .eye    = { 0.0,  0.0, -2.0 },
-    .center = { 0.0,  0.0,  0.0 },
-    .up     = { 0.0,  1.0,  0.0 }
-};
-
-/** Key callback */
+/// Key callback
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    // disregard the release of keys
+    // disregard key releases
     if (action == GLFW_RELEASE)
         return;
 
@@ -24,49 +16,59 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         case GLFW_KEY_RIGHT:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
+        case GLFW_KEY_W:
+            cam.pos[2] -= 0.2;
+            break;
+        case GLFW_KEY_A:
+            cam.pos[0] -= 0.2;
+            break;
+        case GLFW_KEY_S:
+            cam.pos[2] += 0.2;
+            break;
+        case GLFW_KEY_D:
+            cam.pos[0] += 0.2;
+            break;
+        case GLFW_KEY_SPACE:
+            cam.pos[1] -= 0.2;
+            break;
+        case GLFW_KEY_LEFT_SHIFT:
+            cam.pos[1] += 0.2;
+            break;
     }
+    // in case the camera's position has changed
+    upt_cam();
 }
 
-/** Handle drawing everything to the window */
+/// Handle drawing everything to the window
 void display(GLFWwindow *window, world w) {
     // clear the screen
     glClearColor(0.4, 0.4, 0.4, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw each object
-    for (int i = 0; i < w.objects_len; i++) {
+    for (uint i = 0; i < w.objects_len; i++) {
         const obj o = w.objects[i]; // the current object
 
-        /**
-         * `v` : view
-         * `r` : rotate
-         * `m` : modelview
-         * `p` : projection
-         */
-        mat4x4 v, r, m, p;
-
-        // init view matrix
-        mat4x4_look_at(v, cam.eye, cam.center, cam.up);
-
         // init rotation matrix
-        mat4x4_identity(r);
-        mat4x4_rotate_Y(r, r, glfwGetTime());
+        mat4x4_identity(cam.r);
+        mat4x4_rotate_Y(cam.r, cam.r, glfwGetTime());
 
-        // init modelview matrix (view * rotate)
-        mat4x4_identity(m);
-        mat4x4_mul(m, m, v);
-        mat4x4_mul(m, m, r);
+        // Instead of calling `upt_cam` to fully update the camera,
+        // clone only the camera's modelview matrix as it's the
+        // only matrix being modified; everything else stays the
+        // same, so there's no need to recalculate their values
+        mat4x4 m;
+        mat4x4_dup(m, cam.m);
 
-        // init projection matrix
-        mat4x4_perspective(p, 0.8, (float)WIDTH / (float)HEIGHT, 0.01, 60.0);
+        // multiply modelview with rotation matrix
+        mat4x4_mul(m, m, cam.r);
 
         // use the correct program
         glUseProgram(o.program);
 
         // init uniforms
-        glUniformMatrix4fv(0, 1, GL_FALSE, (float *)p); // projection
-        glUniformMatrix4fv(1, 1, GL_FALSE, (float *)m); // modelview
-        glUniform1ui(2, o.has_norms);                   // has_norms
+        glUniformMatrix4fv(0, 1, GL_FALSE, (float *)m); // modelview
+        glUniformMatrix4fv(1, 1, GL_FALSE, (float *)cam.p); // projection
 
         // bind and draw object
         glBindVertexArray(o.vao);
@@ -77,7 +79,6 @@ void display(GLFWwindow *window, world w) {
         else
             glDrawArrays(o.mode, 0, o.vertices_len);
     }
-    glUseProgram(0);
 }
 
 int main(int argc, char **argv) {
@@ -99,80 +100,29 @@ int main(int argc, char **argv) {
     glfwSetKeyCallback(window, key_callback);
 
     // init world container (for managing all objects)
-    world w = (world){
+    world wd = (world) {
         .objects = (obj *)malloc(sizeof(obj)),
-        .objects_len = 0};
-
-    // position of the object
-    const float x = -0.5;
-    const float y = -0.5;
-    const float z = -0.5;
-
-    // size of the object
-    const float wx = 1.0;
-    const float vy = 1.0;
-    const float hz = 1.0;
-
-    // temp
-    const float x_w = x + wx;
-    const float y_v = y + vy;
-    const float z_h = z + hz;
-
-    // vertex positions for a cube
-    const GLfloat vertices[] = {
-        x,   y,   z,   // (0, 0, 0) [0]
-        x,   y,   z_h, // (0, 0, 1) [1]
-        x,   y_v, z,   // (0, 1, 0) [2]
-        x,   y_v, z_h, // (0, 1, 1) [3]
-        x_w, y,   z,   // (1, 0, 0) [4]
-        x_w, y,   z_h, // (1, 0, 1) [5]
-        x_w, y_v, z,   // (1, 1, 0) [6]
-        x_w, y_v, z_h, // (1, 1, 1) [7]
+        .objects_len = 0
     };
 
-    // form the cube with all counter-clockwise triangles
-    const GLuint indices[] = {
-        // FRONT
-        1, 5, 7,
-        7, 3, 1,
-
-        // RIGHT
-        5, 4, 6,
-        6, 7, 5,
-
-        // BACK
-        2, 6, 4,
-        4, 0, 2,
-
-        // LEFT
-        0, 1, 3,
-        3, 2, 0,
-
-        // BOTTOM
-        0, 4, 5,
-        5, 1, 0,
-
-        // TOP
-        3, 7, 6,
-        6, 2, 3
-    };
-
-    // create the cube (with normals)
-    create_object(&w, program, 24, 36,
-                  vertices,
-                  indices,
-                  true,
-                  GL_DYNAMIC_DRAW,
-                  GL_TRIANGLES);
+    create_rect(&wd, program, (vec3) {
+        -0.5, -0.5, -0.5
+    }, (vec3) {
+        1, 1, 1
+    });
 
     while (!glfwWindowShouldClose(window)) {
-        display(window, w);
+        display(window, wd);
         // update other events like input handling
         glfwPollEvents();
         // put the stuff we've been drawing onto the display
         glfwSwapBuffers(window);
     }
+
+    // clean up
     glfwDestroyWindow(window);
     glfwTerminate();
+    free(wd.objects);
+
     return 0;
 }

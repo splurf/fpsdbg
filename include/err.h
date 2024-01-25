@@ -1,9 +1,6 @@
-/* Simple error handling, including the error callback method */
-
-/**
- * @file
- * @author Evan Schwartzentruber
-*/
+/// Simple error handling, including the error callback method.
+/// @file
+/// @author Evan Schwartzentruber
 
 #include <stdio.h>
 

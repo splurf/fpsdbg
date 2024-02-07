@@ -2,7 +2,7 @@
 
 /// Key callback
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    // disregard key releases
+    // ignore key releases
     if (action == GLFW_RELEASE)
         return;
 
@@ -82,7 +82,8 @@ void display(GLFWwindow *window, world w) {
 }
 
 int main(int argc, char **argv) {
-    GLFWwindow *window = init(); // new window
+    // init new GLFW window
+    GLFWwindow *window = init();
 
     // shader files (vertex and fragment)
     const GLuint vs = shader_from_file("shaders/fpsdbg.vert", GL_VERTEX_SHADER);

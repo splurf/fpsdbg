@@ -88,8 +88,8 @@ void calc_norm(const uint n, const vec3 vertices[], vec3 normals[]) {
     }
 }
 
-uint create_object(world *wd, const GLuint program, const uint n, const uint m, const float *vertices, const uint *indices, const GLenum usage, const GLenum mode) {
-    GLuint vao, vbo;
+uint create_object(world *wd, const uint program, const uint n, const uint m, const float *vertices, const uint *indices, const GLenum usage, const GLenum mode) {
+    uint vao, vbo;
     GLboolean has_ebo = m > 0;
 
     {
@@ -105,7 +105,7 @@ uint create_object(world *wd, const GLuint program, const uint n, const uint m, 
 
         // create and bind Elements Buffer Object (EBO)
         if (has_ebo) {
-            GLuint ebo;
+            uint ebo;
             glGenBuffers(1, &ebo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, m * sizeof(float), indices, usage);
@@ -151,7 +151,7 @@ uint create_object(world *wd, const GLuint program, const uint n, const uint m, 
     return i;
 }
 
-uint create_rect(world *wd, const GLuint program, const vec3 pos, const vec3 dim) {
+uint create_rect(world *wd, const uint program, const vec3 pos, const vec3 dim) {
     const float
     x = pos[0], // x-pos
     y = pos[1], // y-pos
@@ -215,25 +215,29 @@ uint create_rect(world *wd, const GLuint program, const vec3 pos, const vec3 dim
 GLFWwindow *init() {
     glfwSetErrorCallback(_error);
 
+    // init GLFW
     if (!glfwInit()) {
         error("Failed to initialize GLFW.");
         exit(EXIT_FAILURE);
     }
-    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
 
+    // retrieve primary monitor
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     if (!monitor) {
         error("Failed to get primary monitor.");
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-    const GLFWvidmode *video = glfwGetVideoMode(monitor);
 
+    // retrive video mode of primary monitor
+    const GLFWvidmode *video = glfwGetVideoMode(monitor);
     if (!video) {
         error("Failed to get video mode.");
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
 
+    // initial window dimensions
     const int w = video->width / 2;
     const int h = video->height / 2;
 
@@ -244,8 +248,8 @@ GLFWwindow *init() {
     // 8 samples of anti-aliasing
     glfwWindowHint(GLFW_SAMPLES, 8);
 
+    // init GLFW window
     GLFWwindow *window = glfwCreateWindow(w, h, "fpsdbg", NULL, NULL);
-
     if (!window) {
         error("Failed to initialize GLFW window.");
         glfwTerminate();
@@ -253,18 +257,19 @@ GLFWwindow *init() {
     }
     glfwMakeContextCurrent(window);
 
+    // init GLEW
     if (glewInit() != GLEW_OK) {
         error("Failed to initialize GLEW.");
+        glfwDestroyWindow(window);
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-    // basic config
+
+    // simple default config
     glEnable(GL_MULTISAMPLE);
     glfwSwapInterval(1);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // automatically handle framebuffer_size changes
     framebuffer_size_callback(window, w, h);

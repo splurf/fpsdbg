@@ -36,7 +36,7 @@ void scroll_callback(GLFWwindow *window, const double xoffset, const double yoff
 void calc_norm(const uint n, const vec3 vertices[], vec3 normals[]);
 
 /// @brief Create an object and automatically store it into the world container (this is unchecked, assumes there's enough space allocated)
-/// @param w world pointer
+/// @param wd world pointer
 /// @param program current program
 /// @param n size of vertices array
 /// @param m size of indices array
@@ -44,9 +44,16 @@ void calc_norm(const uint n, const vec3 vertices[], vec3 normals[]);
 /// @param indices indices array
 /// @param usage type of usage
 /// @param mode rendering mode
-uint create_object(world *wd, const GLuint program, const uint n, const uint m, const float *vertices, const uint *indices, const GLenum usage, const GLenum mode);
+/// @return GLuint identifier
+uint create_object(world *wd, const uint program, const uint n, const uint m, const float *vertices, const uint *indices, const GLenum usage, const GLenum mode);
 
-uint create_rect(world *wd, const GLuint program, const vec3 pos, const vec3 dim);
+/// @brief Create a rectangular-prism based on the provided dimensions
+/// @param wd world pointer
+/// @param program current program
+/// @param pos position of geometry
+/// @param dim dimensions of geometry
+/// @return GLuint identifier
+uint create_rect(world *wd, const uint program, const vec3 pos, const vec3 dim);
 
 /// @brief Convenience method for initializing the `GLFW` and `GLEW` libraries as well as a new and simple window
 /// @return newly initialized GLFW window

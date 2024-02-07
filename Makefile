@@ -1,31 +1,73 @@
-# Compiler config
-CC = gcc
-SRC = src/*
-INCLUDE = include/*
-LIBS = -lGL -lGLEW `pkg-config glfw3 --static --libs`
-BUILD = $(CC) src/main.c -Iinclude $(LIBS)
-
-# Project name
+# project name
 PROJECT = fpsdbg
 
-# Common directories
-TARGET_DIR = target
-DEBUG_DIR = $(TARGET_DIR)/debug
-RELEASE_DIR = $(TARGET_DIR)/release
+# compiler config
+CC = gcc
+CFLAGS_COMMON = -Wall -pedantic
+CFLAGS_DEBUG = -g
+CFLAGS_RELEASE = -Ofast
 
-debug: $(DEBUG_DIR)/$(PROJECT)		# unoptimized
-release: $(RELEASE_DIR)/$(PROJECT)	# optimized
+# dependencies
+LIBS = -lGL -lGLEW `pkg-config glfw3 --static --libs`
 
-$(DEBUG_DIR)/$(PROJECT): $(SRC) $(INCLUDE)
-	@mkdir -p $(DEBUG_DIR)
-	$(BUILD) -g -o $@
+# local directories
+SRC_DIR = src
+INC_DIR = inc
+OBJ_DIR = obj
+BIN_DIR = bin
 
-$(RELEASE_DIR)/$(PROJECT): $(SRC) $(INCLUDE)
-	@mkdir -p $(RELEASE_DIR)
-	$(BUILD) -o $@ -Ofast
+# system directories
+USR_LOC_BIN_DIR = /usr/local/bin
 
+# source code and objects
+SRC = $(wildcard $(SRC_DIR)/*)
+INC = $(wildcard $(INC_DIR)/*)
+OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
+
+
+# build executable for debug
+debug: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_DEBUG)
+debug: $(BIN_DIR)/$(PROJECT)
+
+# build executable for release
+release: CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_RELEASE)
+release: $(BIN_DIR)/$(PROJECT)
+
+
+# install to /usr/local/bin
+install: release
+	@cp $(BIN_DIR)/$(PROJECT) $(USR_LOC_BIN_DIR)/$(PROJECT)
+	@echo "Successfully installed $(PROJECT)."
+
+# remove from /usr/local/bin, if it exists
+uninstall:
+ifeq (,$(wildcard $(USR_LOC_BIN_DIR)/$(PROJECT)))
+	@echo "$(PROJECT) doesn't exist."
+else
+	@rm -f $(USR_LOC_BIN_DIR)/$(PROJECT)
+	@echo "Successfully removed $(PROJECT)."
+endif
+
+
+# link objects into executable
+$(BIN_DIR)/$(PROJECT): $(OBJ)
+	@mkdir -p $(BIN_DIR)
+	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LIBS)
+
+# compile object files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INC)
+	@mkdir -p $(OBJ_DIR)
+	$(CC) -o $@ -c $< -I$(INC_DIR) $(CFLAGS)
+
+
+# remove all build files and executables
 clean:
-	@rm -rf $(TARGET_DIR)
+	@rm -rf $(BIN_DIR) $(OBJ_DIR)
 
-fmt: $(SRC)
-	@astyle -xjpqnxgHSA14 --squeeze-lines=2 --squeeze-ws $^
+
+# format the code using `astyle`
+fmt: $(SRC) $(INC)
+	@astyle -xWxjpqnxgHSA14 --squeeze-lines=2 --squeeze-ws $^
+
+
+.PHONY: all install uninstall clean fmt

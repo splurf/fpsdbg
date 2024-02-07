@@ -1,5 +1,47 @@
 #include "fpsdbg.h"
 
+
+const shader SHADER_VERT = {"                             \n\
+#version 460                                              \n\
+                                                          \n\
+layout(location = 0) in vec3 a_pos;                       \n\
+layout(location = 1) in vec3 a_norm;                      \n\
+                                                          \n\
+out vec3 b_pos; // modified position                      \n\
+out vec3 b_norm; // modified normals                      \n\
+                                                          \n\
+layout(location = 0) uniform mat4 modelview;              \n\
+layout(location = 1) uniform mat4 projection;             \n\
+                                                          \n\
+void main() {                                             \n\
+    vec4 pos = vec4(a_pos, 1.0);                          \n\
+    b_pos = (modelview * pos).xyz;                        \n\
+    mat3 norm_mat = transpose(inverse(mat3(modelview)));  \n\
+    b_norm = normalize(norm_mat * a_norm);                \n\
+    gl_Position = projection * modelview * pos;           \n\
+}                                                         \n\
+", GL_VERTEX_SHADER
+                           };
+
+const shader SHADER_FRAG = {"                          \n\
+#version 460                                           \n\
+                                                       \n\
+in vec3 b_pos;                                         \n\
+in vec3 b_norm;                                        \n\
+                                                       \n\
+out vec4 frag_color;                                   \n\
+                                                       \n\
+void main() {                                          \n\
+    vec3 light_pos = vec3(0.0, 0.0, 0.0);              \n\
+    vec3 light_dir = normalize(light_pos - b_pos);     \n\
+    vec3 norm = normalize(b_norm);                     \n\
+    float diffuse = max(dot(light_dir, norm), 0.0);    \n\
+    vec3 light_color = vec3(0.2, 0.3, 1.0) * diffuse;  \n\
+    frag_color = vec4(light_color, 1.0);               \n\
+}                                                      \n\
+", GL_FRAGMENT_SHADER
+                           };
+
 /// Key callback
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     // ignore key releases
@@ -82,15 +124,19 @@ void display(GLFWwindow *window, world w) {
 }
 
 int main(int argc, char **argv) {
-    // init new GLFW window
+    // init GLFW and GLEW and window
     GLFWwindow *window = init();
 
     // shader files (vertex and fragment)
-    const GLuint vs = shader_from_file("shaders/fpsdbg.vert", GL_VERTEX_SHADER);
-    const GLuint fs = shader_from_file("shaders/fpsdbg.frag", GL_FRAGMENT_SHADER);
+    uint vs, fs;
+    if (!(compile_shader(&vs, SHADER_VERT) && compile_shader(&fs, SHADER_FRAG))) {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return 1;
+    }
 
     // init program with shaders
-    const GLuint program = glCreateProgram();
+    const uint program = glCreateProgram();
     glAttachShader(program, vs); // link vertex shader
     glAttachShader(program, fs); // link fragment shader
     glLinkProgram(program); // link program
@@ -121,9 +167,7 @@ int main(int argc, char **argv) {
     }
 
     // clean up
+    free(wd.objects);
     glfwDestroyWindow(window);
     glfwTerminate();
-    free(wd.objects);
-
-    return 0;
 }

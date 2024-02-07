@@ -1,6 +1,6 @@
 #version 460
 
-in vec3 b_pos;  // position
+in vec3 b_pos; // position
 in vec3 b_norm; // normals
 
 out vec4 frag_color; // fragment color
